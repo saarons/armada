@@ -72,9 +72,37 @@ Armada models can also enjoy the added benefits of validation and automatic time
 
 All Armada models are given an id if none is specified during creation.  This is a requirement of FleetDB.  The default generation method is `generate_unique_id` in `Armada::Model`.  Note that Armada models can be treated very similarly to ActiveRecord models.
 
+### Querying
+All querying is handled through instances of `Armada::Relation`, which handle everything.  Read the FleetDB [query docs](http://fleetdb.org/docs/queries.html) for more detailed information.
+
+    plane1 = Airplane.new(:tail_number => 815)
+    plane2 = Airplane.new(:tail_number => 316)
+    plane1.save
+    plane2.save
+
+    # Until specified, FleetDB has no order.
+    Airplane.all #=> [plane1, plane2] | [plane2, plane1]
+    
+    Airplane.where(:tail_number => 815).all #=> [plane1]
+    Airplane.where(:tail_number => 815).first #=> plane1
+    
+    # Using the FleetDB count command
+    Airplane.where(:tail_number => 815).count #=> 1
+    
+    # Armada::Relation sets :order to :asc by default
+    Airplane.order(:tail_number).all #=> [plane2, plane1]
+    Airplane.order(:tail_number => :desc).all #=> [plane1, plane1]
+    
+    # Armada::Relation supports offset and limit just like SQL
+    Airplane.order(:tail_number).limit(1).all #=> [plane2]
+    Airplane.order(:tail_number).offset(1).all #=> [plane1]
+    
+    # The :only option allows choosing specific attributes
+    Airplane.order(:tail_number).only(:tail_number).all #=> [316, 815]
+
 ## Credit
 * [Mark McGranaghan](http://github.com/mmcgrana) - For developing FleetDB and providing a sample Ruby client.
 
 ## Copyright
-Copyright © 2010 Sam Aarons, released under the MIT license
+Copyright © 2010 [Sam Aarons](http://github.com/saarons), released under the MIT license
 
