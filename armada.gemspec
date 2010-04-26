@@ -14,7 +14,6 @@ Gem::Specification.new do |s|
   s.required_ruby_version     = ">= 1.9.1"
   s.required_rubygems_version = ">= 1.3.6"
   
-  s.add_dependency "yajl-ruby",   ">= 0.7.4"
   s.add_dependency "activemodel", ">= 3.0.0.beta3"
   
   s.add_development_dependency "rspec", ">= 1.3.0"

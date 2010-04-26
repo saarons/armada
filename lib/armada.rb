@@ -1,6 +1,5 @@
 # coding: UTF-8
 
-require 'yajl'
 require 'socket'
 
 require 'active_model'
