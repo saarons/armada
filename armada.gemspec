@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = "armada"
-  s.version     = "0.1.0"
+  s.version     = "0.1.1"
   s.authors     = ["Sam Aarons"]
   s.date        = Date.today.to_s
   s.email       = ["samaarons@gmail.com"]
@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.required_ruby_version     = ">= 1.9.1"
   s.required_rubygems_version = ">= 1.3.6"
   
-  s.add_dependency "activemodel", ">= 3.0.0.beta3"
+  s.add_dependency "activemodel", "= 3.0.0.beta3"
   
   s.add_development_dependency "rspec", ">= 1.3.0"
  
