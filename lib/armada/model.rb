@@ -76,7 +76,7 @@ module Armada
     end
     
     def relation
-      @relation ? @relation.dup : @relation = Armada::Relation.new(self.class).where(:id => self.id)
+      @relation ||= Armada::Relation.new(self.class).where(:id => self.id)
     end
     
   end

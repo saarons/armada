@@ -10,10 +10,10 @@ module Armada
         relation = record.class.where(attribute => value)
         
         Array.wrap(options[:scope]).each do |scope_attribute|
-          relation.where(scope_attribute => record.attributes[scope_attribute])
+          relation = relation.where(scope_attribute => record.attributes[scope_attribute])
         end
         
-        relation.where(:id => {"!=" => record.id}) if record.persisted?
+        relation = relation.where(:id => {"!=" => record.id}) if record.persisted?
         
         return if relation.count == 0
         record.errors.add(attribute, :taken, :default => options[:message], :value => value)

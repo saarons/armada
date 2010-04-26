@@ -10,7 +10,7 @@ module Armada
       QUERY_METHODS    = %w(insert select delete count multi_read multi_write checked_write create_index drop_index list_indexes)
       
       def relation
-        Armada::Relation.new(self)
+        @_class_relation ||= Armada::Relation.new(self)
       end
       
       delegate(*(QUERY_METHODS + QUERY_OPTIONS + RELATION_METHODS), :to => :relation)
@@ -43,43 +43,45 @@ module Armada
         end
       end
       where = where.size > 1 ? where.unshift("and") : where.first
-      @where = if option_defined?(:where)
-        if @join == @where.first && @where.first == where.first
-          @where.concat(where.from(1))
-        elsif @join == @where.first && !is_conjunction?(where.first)
-          @where << where
-        elsif @join == where.first && is_conjunction?(@where.first)
-          @where.tap { |w| w[-1] = ([@join] << w.last).concat(where.from(1)) }
-        elsif @join == where.first && !is_conjunction?(@where.first)
-          where.insert(1,@where)
-        elsif @join == "and" && @where.first == "or" && !is_conjunction?(where.first) && !is_conjunction?(@where.last.first)
-          @where.tap { |w| w[-1] = [@join] << w.last << where }
-        elsif @join == "and" && @where.first == "or" && !is_conjunction?(where.first) && is_conjunction?(@where.last.first)
-          @where.tap { |w| w[-1] << where }
+      
+      join, old_where = [@join, @where]
+      
+      new_where = if option_defined?(:where)
+        if join == old_where.first && old_where.first == where.first
+          old_where.concat(where.from(1))
+        elsif join == old_where.first && !is_conjunction?(where.first)
+          old_where << where
+        elsif join == where.first && is_conjunction?(old_where.first)
+          old_where.tap { |w| w[-1] = ([join] << w.last).concat(where.from(1)) }
+        elsif join == where.first && !is_conjunction?(old_where.first)
+          where.insert(1,old_where)
+        elsif join == "and" && old_where.first == "or" && !is_conjunction?(where.first) && !is_conjunction?(old_where.last.first)
+          old_where.tap { |w| w[-1] = [join] << w.last << where }
+        elsif join == "and" && old_where.first == "or" && !is_conjunction?(where.first) && is_conjunction?(old_where.last.first)
+          old_where.tap { |w| w[-1] << where }
         else
-          [@join] << @where << where
+          [join] << old_where << where
         end
       else
         where
       end
-      @join = "and"
-      self
+      self.dup.tap do |r|
+        r.set_option(:where, new_where)
+        r.set_option(:join, "and")
+      end
     end
     
     def or
       raise(ArgumentError, "Missing 'where' condition") unless option_defined?(:where)
-      @join = "or"
-      self
+      self.dup.tap { |r| r.set_option(:join, "or") }
     end
     
     def offset(value)
-      @offset = value
-      self
+      self.dup.tap { |r| r.set_option(:offset, value) }
     end
     
     def limit(value)
-      @limit = value
-      self
+      self.dup.tap { |r| r.set_option(:limit, value) }
     end
     
     def order(*attributes)
@@ -94,28 +96,31 @@ module Armada
         order.flatten! if order.size == 1
       end
       
-      @order = if option_defined?(:order)
-        @order = [@order] unless @order.first.is_a?(Array)
-        order.first.is_a?(Array) ? @order.concat(order) : @order << order
+      old_order = @order
+      
+      new_order = if option_defined?(:order)
+        old_order = [old_order] unless old_order.first.is_a?(Array)
+        order.first.is_a?(Array) ? old_order.concat(order) : old_order << order
       else
         order
       end
-      self
+      
+      self.dup.tap { |r| r.set_option(:order, new_order) }
     end
     
     def only(*attributes)
       attributes.flatten!
-      @only = if option_defined?(:only)
+      only = if option_defined?(:only)
         Array.wrap(@only).concat(attributes)
       else
         attributes.size == 1 ? attributes.first : attributes
       end
-      self
+      
+      self.dup.tap { |r| r.set_option(:only, only) }
     end
     
     def distinct
-      @distinct = true
-      self
+      self.dup.tap { |r| r.set_option(:distinct, true) }
     end
     
     def to_query(method = nil, *args, &block)
@@ -124,10 +129,18 @@ module Armada
     
     def all
       results = self.select
-      return results if option_defined?(:only)
+      return results if option_defined?(:only) || @superclass.is_a?(String)
       results.map { |record| @superclass.send(:instantiate, record) }
     end
     delegate :first, :last, :to => :all
+    
+    def set_option(option, value)
+      instance_variable_set("@#{option}", value)
+    end
+    
+    def get_option(option)
+      instance_variable_get("@#{option}")
+    end
     
     private
     
@@ -220,11 +233,7 @@ module Armada
     end
     
     def collection_name
-      @collection_name ||= if @superclass.is_a?(String)
-        @superclass
-      else
-        @superclass.collection_name
-      end
+      @collection_name ||= @superclass.is_a?(String) ? @superclass : @superclass.collection_name
     end
     
     def query(args)
@@ -234,7 +243,7 @@ module Armada
     def build_condition(attribute, value)
       operator = case value
         when Array then "in"
-        when Range then ">=<="
+        when Range then value.exclude_end? ? ">=<" : ">=<="
         else "="
       end
       [operator, attribute, build_condition_value(value)]
