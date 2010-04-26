@@ -72,4 +72,9 @@ Armada models can also enjoy the added benefits of validation and automatic time
 
 All Armada models are given an id if none is specified during creation.  This is a requirement of FleetDB.  The default generation method is `generate_unique_id` in `Armada::Model`.  Note that Armada models can be treated very similarly to ActiveRecord models.
 
+## Credit
+* [Mark McGranaghan](http://github.com/mmcgrana) - For developing FleetDB and providing a sample Ruby client.
+
+## Copyright
+Copyright © 2010 Sam Aarons, released under the MIT license
 
