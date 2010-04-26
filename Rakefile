@@ -1,13 +1,10 @@
-require 'rake'
-begin
-  require 'spec/rake/spectask'
-rescue LoadError
-  puts "Please install RSpec"
-end
+# coding: UTF-8
 
+require "rake"
+require "spec/rake/spectask"
 
 desc "Run all tests"
-Spec::Rake::SpecTask.new('test') do |t|
+Spec::Rake::SpecTask.new("test") do |t|
   t.spec_opts = ["--color"]
   t.pattern = "test/**/*_spec.rb"
 end
